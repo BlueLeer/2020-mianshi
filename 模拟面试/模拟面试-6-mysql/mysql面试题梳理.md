@@ -57,12 +57,35 @@
 | 外键         | 支持   | 不支持 |
 | 行级锁       | 支持   | 不支持 |
 | 自动奔溃恢复 | 支持   | 不支持 |
+|              |        |        |
 
 还有：MySQL 5.1及之前的版本中，MyISAM是默认的存储引擎，而在MySQL 5.5之后，InnoDB称为了MySQL默认的存储引擎。MyISAM会对整张表加锁，而不是针对行加锁；MyISAM数据可被压缩，存储空间很少，而且MyISAM在筛选大数据时非常快。
 
 InnoDB是事务型引擎，当事务异常提交时，会被回滚。同时，InnoDB支持行锁。此外InnoDB需要更多的存储空间，它会在内存中建立其专门的缓冲池用于高速缓冲数据和索引。InnoDB支持自动崩溃恢复特性。
 
+某些情况下，使用MyISAM也是比较适合的，例如读密集的情况下。
+
 上面这么多不同点，随便抓一个，就能成为一个考点。
+
+
+
+### 3.3 说说InnoDB和MyISAM使用B+Tree实现原理的不同
+
+* MyISAM
+
+  叶子结点包括了key和value，key存放的是索引，value存的是数据地址（可以理解为行记录的地址）。在根据索引检索的时候，如果指定的key存在，则取出value的值，然后根据这个值为地址去读取相应的记录。这被称为**非聚簇索引**，也叫非聚集索引（即索引和数据是分开的）。
+
+* InnoDB
+
+  根据主索引（primary key是默认的主索引，如果没有则取unique的列为主索引，如果连unique都没有，那就弄个row_id）构建一个B+树的索引数据结构，它的叶子结点data域保存了完整的数据记录，也就是说InnoDB的数据文件本身就是索引，这也是“聚簇索引”的由来。除了主索引，我们还可以创建其他的索引，例如：
+
+  ```sql
+  create table people(id int primary key, name varchar(20));
+  -- 上面以已经指定了一个主键，所以它默认就有主索引了，接下来我们添加一个普通索引，这个普通索引也是二级索引
+  ALTER TABLE people ADD INDEX index_n(name);
+  ```
+
+  **在根据主索引搜索时，找到叶子结点后，直接找到key所对应的节点即可取出数据；在根据辅助索引进行搜索时，叶子节点中存储主键值，每次查找数据时，根据索引找到叶子节点中的主键值，根据主键值再到聚簇索引中得到完整的一行记录。**
 
 
 
@@ -73,6 +96,24 @@ InnoDB是事务型引擎，当事务异常提交时，会被回滚。同时，In
 我们可以把索引表当做是表和行记录（构成数据页的东东，把它们叫做行记录，或者行格式）的中间表，它维护了表的索引列到物理数据地址之间的映射。
 
 在InnoDB数据页中，行记录是根据主键（如果没有主键，也没有unique的列，则会生成隐藏的rowid作为“主键”）排列起来，并且所有的记录呈现一个单链表的形态（通过next_record指向下个记录）。查询的时候，先去匹配索引，然后根据索引对应的数据的行位置去提取数据。
+
+创建索引的语句：
+
+```mysql
+-- 创建索引的语句
+-- 1.添加PRIMARY KEY（主键索引） 
+mysql>ALTER TABLE table_name ADD PRIMARY KEY (column_name);
+-- 2.添加UNIQUE(唯一索引) 
+mysql>ALTER TABLE table_name ADD UNIQUE (column) ;
+-- 添加主键列和唯一列都会默认添加索引
+------------------------------------------------------------
+-- 3.添加INDEX(普通索引) 
+mysql>ALTER TABLE table_name ADD INDEX index_name (column); 
+-- 4.添加FULLTEXT(全文索引) 
+mysql>ALTER TABLE table_name ADD FULLTEXT (column);
+-- 5.添加多列索引,也叫联合索引,添加到多列上面的
+mysql>ALTER TABLE table_name ADD INDEX index_name (column1, column2, column3);
+```
 
 
 
@@ -113,6 +154,12 @@ InnoDB是事务型引擎，当事务异常提交时，会被回滚。同时，In
 
 1. 占用额外的物理空间，特别是聚集索引，需要较大的空间
 2. 当对表中的数据进行增加、删除和修改的时候，索引也要动态的维护，这样就降低了数据的维护速度，并且随着数据量的增大，耗费的时间会越来越多。
+
+
+
+
+
+来吧，尝试几道面试题，检验下自己：<https://www.cnblogs.com/gaoquanquan/p/11030999.html>
 
 
 
