@@ -50,7 +50,96 @@ public class Singleton{
 
 
 
-## 4.你能说说如何解决单例模式中的反序列问题嘛？
+## 4. 你能说说子类和父类的初始化顺序嘛?
+
+1. 父类静态变量和静态代码块（谁在前谁先执行，它们是同一level的）
+2. 子类静态变量和静态代码块（谁在前谁先执行，它们是同一level的）
+3. 父类非静态变量和非静态代码块（谁在前谁先执行，它们是同一level的）
+4. 父类构造方法
+5. 子类非静态变量和非静态代码块（谁在前谁先执行，它们是同一level的）
+6. 子类构造方法
+
+代码演示：
+
+```java
+public class Father {
+    public static A a = new A();
+    public B b = new B();
+    
+    static {
+        System.out.println("父类静态代码块...");
+    }
+    
+    {
+        System.out.println("父类非静态代码块...");
+    }
+
+    public Father() {
+        System.out.println("父类构造方法...");
+    }
+
+    static class A {
+        public A() {
+            System.out.println("父类静态变量...");
+        }
+    }
+
+    static class B {
+        public B() {
+            System.out.println("父类非静态变量...");
+        }
+    }
+}
+
+public class Son extends Father {
+    public static A a = new A();
+    public B b = new B();
+
+    static {
+        System.out.println("子类静态代码块...");
+    }
+
+    {
+        System.out.println("子类非静态代码块...");
+    }
+
+    public Son() {
+        System.out.println("子类构造方法...");
+    }
+
+    static class A {
+        public A() {
+            System.out.println("子类静态变量...");
+        }
+    }
+
+    static class B {
+        public B() {
+            System.out.println("子类非静态变量...");
+        }
+    }
+
+    public static void main(String[] args) {
+        Son son = new Son();
+    }
+}
+
+// 输出:
+父类静态变量...
+父类静态代码块...
+子类静态变量...
+子类静态代码块...
+父类非静态变量...
+父类非静态代码块...
+父类构造方法...
+子类非静态变量...
+子类非静态代码块...
+子类构造方法...
+```
+
+
+
+## 5.你能说说如何解决单例模式中的反序列问题嘛？
 
 我们将一个单例序列化以后，然后反序列化，会生成另一个对象，这就破坏了单例模式。解决方式是，在需要单例的类中加入一个`readResolve()` 方法，同时返回该单例即可，代码如下：
 
@@ -72,3 +161,30 @@ public class Singleton implements Serializable{
 **那么这个readResolve()方法是从哪来的，为什么加上之后就能返回同一实例了呢？**
 
 我们知道，对象反序列时通过ObjectInputStream来通过对象字节流创建对象的，它里面有个`readOrdinaryObject()`方法，回去类中是否有这个方法，如果有的话，它会调用这个方法拿到一个返回值，并将该返回值作为最终的反序列结果（大致意思是这个，可能有出入）。
+
+
+
+## 6.为什么String要设计成不可变的?
+
+1. 字符串常量池的需要
+
+   如我们所知，通过字符串字面量的声明方式创建String对象的时候，如果该字符串已经存在，则不会创建一个新的对象，而是直接引用已经存在的对象：
+
+   ```java
+   String s1 = "Hello";
+   String s2 = "Hello";
+   System.out.println(s1==s2); // 输出true
+   String s3 = "abc" + "d";
+   String s4 = "ab" + "cd";
+   System.out.println(s3==s4); // 输出也是true,编译器会进行优化,会将拼接后的字符串指向常量池中同一个对象
+   ```
+
+   也就是说在Java虚拟机里面我们可以在各个地方声明 类似于这样的引用：`String s = "Hello"`，如果字符串对象允许改变，那么肯定会影响到其他的独立对象（哎，我修改了s的值，怎么s1.s2它们怎么都变了呢。。。）
+
+2. 允许String对象缓存HashCode
+
+   我们知道，Java中String对象的HashCode被频繁的使用，比如在HashMap等容器中。字符串的不变性保证了hash码的唯一性，因此可以放心的去使用这个hash缓存。其实这也是一种优化手段，不用每次都去计算新的hash码。
+
+3. 安全性
+
+   String被许多的Java类库用来当做参数，例如网络连接、地址URL、文件路径Path，还有反射机制所需要的String类型的参数等等，假若String不是固定不变的，将会引发各种安全隐患。

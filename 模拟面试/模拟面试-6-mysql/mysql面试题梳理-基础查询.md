@@ -321,5 +321,22 @@ mysql>
    select t1.*,t2.* from t1 right join t2 on t1.n1=t2.n2 where t1.n1 is null;
    ```
 
-
 参考：<https://juejin.im/book/5bffcbc9f265da614b11b731/section/5c061b0cf265da612577e0f4>
+
+
+
+## 5.谈谈如何优化MySQL查询
+
+1. 优化数据类型
+
+   避免使用NULL，因为NULL对于数据库来说需要特殊处理，它需要跟多的代码，更多的检查和特殊的逻辑处理，我们应该将字段设置为not null，或者使用一个默认值，例如0,-1作为默认值
+
+   尽可能使用更小的字段，1个字节能解决的尽量不要用更多的字节去存它，造成空间浪费不说，还会增多IO次数（因为页的空间是固定的，字段值大了行记录也大了，这样页存储的记录就小了，而数据库引擎和磁盘交互的单位是页，因而会增加IO次数）
+
+2. 优化count(my_column)和count(*)
+
+3. 优化子查询
+
+4. 优化Union
+
+参考：<https://www.cnblogs.com/xiaomifeng/archive/2015/07/29/4686478.html>
