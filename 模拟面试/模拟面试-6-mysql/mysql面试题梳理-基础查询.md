@@ -333,10 +333,66 @@ mysql>
 
    尽可能使用更小的字段，1个字节能解决的尽量不要用更多的字节去存它，造成空间浪费不说，还会增多IO次数（因为页的空间是固定的，字段值大了行记录也大了，这样页存储的记录就小了，而数据库引擎和磁盘交互的单位是页，因而会增加IO次数）
 
-2. 优化count(my_column)和count(*)
+2. 优化`count()`查询
 
-3. 优化子查询
+   `count(my_column)`统计该列非`null`的总行数，`count(*)`不会扩展所有的行，它会忽略所有的值，而直接统计所有的行数。优化的做法是：使用近似值，有时候有些业务场景并不要求完全精确的count值，此时可以用近似值来代替。如果有where子句时使用count()，如果where关联的字段没有索引，我们可以考虑使用覆盖索引。
 
-4. 优化Union
+3. 有where条件查询优化
+
+   对于经常出现在where子句中中的列，尽量建立索引；如果我们建立了联合索引，注意最左匹配原则下where后面列的拼接顺序；使用覆盖索引，例如：`select name from user where id>2000;`可以建个联合索引`alter table user add index idx_id_name(id,name);`这样的话就会直接在索引中获取数据，减少了读取数据块的数量。
+
+4. 优化子查询
+
+   当遇到子查询的时候，MySQL查询优化引擎并不是最有效的，因此我们应该尽量将子查询转换为连接查询，优化器能够正确处理连接查询之外，还能找到一种最优的策略，尽量的去降低CPU开销和IO开销。但是连接查询我们要注意了，应该在on子句中的连接列上建立索引，连接查询确定驱动表以后，会在被驱动表中查找记录，如果没有索引，那就相当于要对被驱动表做一次全表扫描了。
+
+5. 优化Union
+
+   `Union`代表从两个互不关联的表中返回数据，然后将结果集进行合并，它会去除重复的行，并且会对结果进行排序，我们数据很多的话去重和排序都是非常耗费时间的；而`Union All`它不会去重，也不会排序，相比较`Union`可以大大加快速度加快速度，如果你已经知道你的数据不包括重复行，或者说我们根本就不在乎重复行，在这种情况下使用`Union All`会更加的合适。
 
 参考：<https://www.cnblogs.com/xiaomifeng/archive/2015/07/29/4686478.html>
+
+
+
+## 6. 其他
+
+MySQL为每个表维护了一系列的统计信息，这些信息是如何收集起来的我们暂且不谈，查看一个表的统计信息，例如下方是查看`grade`这个表的统计信息：
+
+```mysql
+mysql> show table status like '%grade%'\G
+*************************** 1. row ***************************
+           Name: grade
+         Engine: InnoDB
+        Version: 10
+     Row_format: Compact
+           Rows: 9969
+ Avg_row_length: 4096
+    Data_length: 16384
+Max_data_length: 0
+   Index_length: 16384
+      Data_free: 10485760
+ Auto_increment: 5
+    Create_time: 2018-09-06 10:19:50
+    Update_time: NULL
+     Check_time: NULL
+      Collation: utf8_general_ci
+       Checksum: NULL
+ Create_options:
+        Comment:
+1 row in set (0.00 sec)
+```
+
+我们重点关注两个属性`Rows`和`Data_Length`：
+
+* Rows
+
+  对于MyISAM引擎来说，该值是准确的，但是对于InnoDB引擎来说，该值是一个估计值，上面显示出grade表使用的存储引擎是InnoDB，Rows是9969，实际上这个表有1000条记录。
+
+* Data_Length
+
+  本选项表示表占用的存储空间的字节数。使用MyISAM引擎来说，该值就是数据文件的大小，对于InnoDB引擎来说，该值就相当于聚簇索引占用存储空间的总大小，也就是说，可以这样来计算该值的大小：
+
+  ```mysql
+  Data_Length = 聚簇索引的页面数量 * 每个页面的大小
+  ```
+
+  
