@@ -14,7 +14,7 @@
 
  这是我学Linux的第一个命令，相信也是很多人学习Linux的第一个命令。ls全称list.
 
-> List information about the FILEs (the current directory by default).  Sort entries alphabetically if none of -cftuvSUX nor --sort is specified.
+> List information about the FILEs (the current directory by -default).  Sort entries alphabetically if none of -cftuvSUX nor --sort is specified.
 >
 > 列出有关文件的信息(默认为当前目录)。如果没有指定-cftuvSUX或——Sort，则按字母顺序排序。
 
@@ -1162,7 +1162,7 @@ kill -9 是我们使用的最多的信号，其实这种方式一点也不优雅
 
 -mmin n  查找系统中最后N分钟被改变文件数据的文件
 
--mtime n 查找系统中最后n*24小时被改变文件数据的文件
+-mtime n 查找系统中最后n*24小时之前被改变文件数据的文件
 
 #### find常用参数示例
 
