@@ -257,7 +257,20 @@ Spring的事件发送需要遵循如下的流程：
 
 （3）使用容器发布事件 （使用ApplicationContext来发布事件）
 
+### 2.5 SpringBoot中配置文件的加载顺序
 
+1. 启动应用时，在命令行中指定的参数
+
+2. 位于当前jar包之外的，针对不同的profile环境的配置文件的内容
+3. 位于当前jar包之内的，针对不同的profile环境的配置文件的内容
+4. 位于当前jar包之外的，application.properties和yml文件中的配置内容
+5. 位于当前jar包之内的，application.properties和yml文件中的配置内容
+6. 在@Configuration+@PropertySource中指定的属性(或者是@ConfigurationProperties中指定的)
+7. 应用的默认属性
+
+优先级是从高往低，如果在1中指定了参数，在2中也指定了该参数，默认是2中会忽略掉，1中的会生效。
+
+上面列举的是常见的，还有些可以更改属性的地方，在这里没有列举出来
 
 ## 3 Spring 高级话题
 
