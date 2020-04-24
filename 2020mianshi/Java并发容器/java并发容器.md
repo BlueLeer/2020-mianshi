@@ -83,7 +83,7 @@ HashTable是线程安全的，它的方法都是`synchronized`的，因此它是
 
 
 
-###ConcurrentLinkedDeque  `并发队列（基于双向链表）`
+### ConcurrentLinkedDeque  `并发队列（基于双向链表）`
 
 
 
@@ -120,6 +120,8 @@ HashTable是线程安全的，它的方法都是`synchronized`的，因此它是
 
 
 参考：<https://www.cnblogs.com/java-friend/p/11675772.html> 
+
+参考：<https://www.jianshu.com/p/32665a52eba1>
 
 
 
