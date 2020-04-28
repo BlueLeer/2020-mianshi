@@ -1,12 +1,6 @@
 ## 1.说说Spring容器的bean实例化过程
 
-
-
-
-
-
-
-
+<https://juejin.im/post/5b040cf66fb9a07ab7748c8b#heading-3>  强烈建议阅读下。
 
 
 
@@ -192,13 +186,206 @@ Spring Aop实现的代码非常非常的绕。也就是说 Spring 为了灵活�
 
 >  这道题还可以回答的更全面些，例如还可以答`Spring AOP基于AspectJ注解是如何实现AOP的`  ?
 >
-> **AspectJ是一个AOP框架，它能够对java代码进行AOP编译（一般在编译期进行），让java代码具有AspectJ的AOP功能（当然需要特殊的编译器）**，可以这样说AspectJ是目前实现AOP框架中最成熟，功能最丰富的语言，更幸运的是，AspectJ与java程序完全兼容，几乎是无缝关联，因此对于有java编程基础的工程师，上手和使用都非常容易。Spring注意到AspectJ在AOP的实现方式上依赖于特殊编译器(ajc编译器)，因此Spring很机智回避了这点，转向采用动态代理技术的实现原理来构建Spring AOP的内部机制（动态织入），这是与AspectJ（静态织入）最根本的区别。**Spring 只是使用了与 AspectJ 5 一样的注解，但仍然没有使用 AspectJ 的编译器，底层依是动态代理技术的实现，因此并不依赖于 AspectJ 的编译器**。 Spring AOP虽然是使用了那一套注解，其实实现AOP的底层是使用了动态代理(JDK或者CGLib)来动态植入。
+>  **AspectJ是一个AOP框架，它能够对java代码进行AOP编译（一般在编译期进行），让java代码具有AspectJ的AOP功能（当然需要特殊的编译器）**，可以这样说AspectJ是目前实现AOP框架中最成熟，功能最丰富的语言，更幸运的是，AspectJ与java程序完全兼容，几乎是无缝关联，因此对于有java编程基础的工程师，上手和使用都非常容易。Spring注意到AspectJ在AOP的实现方式上依赖于特殊编译器(ajc编译器)，因此Spring很机智回避了这点，转向采用动态代理技术的实现原理来构建Spring AOP的内部机制（动态织入），这是与AspectJ（静态织入）最根本的区别。**Spring 只是使用了与 AspectJ 5 一样的注解，但仍然没有使用 AspectJ 的编译器，底层依是动态代理技术的实现，因此并不依赖于 AspectJ 的编译器**。 Spring AOP虽然是使用了那一套注解，其实实现AOP的底层是使用了动态代理(JDK或者CGLib)来动态植入。
 >
-> （参考：<https://snailclimb.gitee.io/javaguide/#/docs/system-design/framework/spring/Spring?id=springaopioc%e5%ae%9e%e7%8e%b0%e5%8e%9f%e7%90%86> ）
+>  （参考：<https://snailclimb.gitee.io/javaguide/#/docs/system-design/framework/spring/Spring?id=springaopioc%e5%ae%9e%e7%8e%b0%e5%8e%9f%e7%90%86> ）
 >
-> 关键: AspectJ是在编译期进行织入，是静态织入，但是需要特殊的编译器；Spring AOP使用了AspectJ的注解，但是没有引入它的编译器，底层使用的是动态代理技术的实现。
+>  关键: AspectJ是在编译期进行织入，是静态织入，但是需要特殊的编译器；Spring AOP使用了AspectJ的注解，但是没有引入它的编译器，底层使用的是动态代理技术的实现。
 
 
+
+### 3.4 说说Spring IOC容器的延迟加载吧
+
+默认情况下，ApplicationContext会在实例化过程中创建和配置**所有的单例bean**（比如我们在xml文件中定义了\<bean>，使用了@Bean、@Service等注解）。这样做的好处是：**可以及时发现环境上的一些配置问题，而不是在系统运行后才发现**。
+
+如果这个Bean的实例化不是很迫切的话，我们可以将其标记为延迟加载来阻止**预初始化**。延迟初始化的bean会通知IoC容器不要将其预初始化，而是在被引用的时候再做实例化。在XML中我们可以通过\<bean>元素的lazy-init属性来控制这个行为。
+
+当lazy-init属性为true的时候，ApplicationContext中的延迟加载bean不会随着ApplicationContext的启动而进行预初始化，非延迟加载的bean会处于预初始化状态。
+
+若一个延迟加载的bean被另一个非延迟加载的bean依赖的时候，则延迟加载的bean依然会在ApplicationContext启动时进行加载。因为它作为单例Bean的依赖，它会随着单例bean的实例化而实例化。
+
+
+
+### 3.5 说说Spring IOC容器是如何处理循环依赖的
+
+参考：https://blog.csdn.net/chen2526264/article/details/80673598
+
+注意：下面的场景都是Bean都没有设置`init-lazy=true`
+
+1. 当使用属性注入的时候，例如A依赖B，B又依赖A，A、B都是单例的（singleton），Spring IOC容器能够解决它们循环依赖出现的问题
+
+2. 当使用属性注入的时候，例如A依赖B，B又依赖A，A、B其中有一个是singleton，另一个是propotype的，那么Spring IOC容器能够解决它们循环依赖出现的问题
+
+3. 当使用属性注入的时候，例如A依赖B，B又依赖A，A、B都是propotype类型的，Spring IOC启动的时候会报错：
+
+   ```java
+   Error creating bean with name 'componentA': Requested bean is currently in creation: Is there an unresolvable circular reference?
+   ```
+
+4. 当使用构造器注入的时候，例如在A的构造器里面有B的形参，B的构造器里面又有A的形参，启动SpringIOC容器的时候就会报错。
+
+好啦，我们看到了上面这种种场景，Spring到底是如何解决这种循环依赖的呢？
+
+我们知道A依赖B，B依赖C，C又依赖A，有时候当程序很复杂的时候，这种环会很大。要想打破这个环，那么这个环中至少需要一个Bean可以在自身的依赖还没有得到满足的时候就能够被创建出来（最起码是要能先实例化出来，可以先不注入其所需要依赖，能让其他的bean拿到它的引用）。这种bean只能通过属性注入依赖的Bean，因为我们可以先通过默认的构造器创建出实例来，然后在通过setter方法注入依赖bean。而通过构造器注入依赖的类，在它的依赖该没有被满足前，无法被实例化。我们来看看A依赖B，B又依赖A的情况下，且A和B都是singleton的时候，容器实例化的时候是怎么处理这种循环依赖的：
+
+1. 尝试创建bean singletonA，发现singletonA是singleton，且不是通过构造器注入依赖，那么先使用默认构造器创建一个A的实例，并保存对它的引用，并且将singletonA标记为“正在创建中的singleton”。然后发现singletonA依赖了singletonB，所以尝试创建singletonB。
+2. 尝试创建bean singletonB，发现singletonB是singleton，且不是通过构造器注入依赖，那么先使用默认构造器创建一个B的实例，并保存对它的引用，并且将singletonB标记为“正在创建中的singleton”。然后发现singletonB依赖了singletonA，所以尝试创建singletonA。
+3. 尝试创建singletonA，注意，这时Spring容器发现singletonA“正在创建中”，那么就不会再去创建singletonA，而是返回容器之前保存了的对singletonA的引用。
+4. 容器将singletonA通过setter方法注入到singletonB，从而singletonB完成创建。
+5. 容器将singletonB通过setter方法注入到singletonA，从而singletonA完成创建。
+
+### 3.6 说说Spring中的自动装配和@Autowired
+
+参考：<https://juejin.im/post/5c84b5285188257c5b477177> 
+
+当Spring装配Bean属性时，有时候非常明确，就是需要将某个Bean的引用赋给指定属性。例如我们应用的上下文中只有一个SqlSessionFactoryBean类型的bean，那么任意一个依赖于该SqlSessionFactoryBean的其他Bean都会被装配上这个SqlSessionFactoryBean。为了明确这种装配场景，Spring提供了自动装配（autowiring）。当涉及到自动装配来维护它们的依赖关系的时候，Spring有多种处理方式。Spring提供了四种自动装配策略：
+
+```java
+public interface AutowireCapableBeanFactory extends BeanFactory {
+    int AUTOWIRE_NO = 0; //无需自动装配
+    int AUTOWIRE_BY_NAME = 1; // 按名称自动装配Bean属性
+    int AUTOWIRE_BY_TYPE = 2; // 按类型自动装配bean属性
+    int AUTOWIRE_CONSTRUCTOR = 3; // 安构造器自动装配
+    /** @deprecated */
+    @Deprecated
+    int AUTOWIRE_AUTODETECT = 4; // Spring 3.0之后不再支持
+}
+```
+
+1. **byName**（通过Bean的名称）
+
+   根据需要装配的属性的bean的名称去找同名的其他bean装配进来
+
+2. **byType**（通过Bean的类型）
+
+   如果上面提到的通过bean名称去装配找不到的话，就使用按照类型来自动装配，它的意思是，把与Bean的属性具有形同类型的其他Bean装配到该属性上来
+
+3. **Constructor**（通过构造器）
+
+   它是说，把与构造器中需要的bean的**同类型**的bean自动装配到bean的构造器中对应的入参中。值得注意的是，它是查找具有相同类型的其他Bean，也就是说它在查找入参的时候，还是通过Bean的类型来确定。（注：他也是先根据类型来查找，如果查找到了多个，还是按照下面的@Autowired的装配策略来）
+
+4. **autoDetect**
+
+   它首先会尝试使用constructor进行自动装配，如果失败再尝试使用byType。不过这种装配策略在Spring 3.0以后被废弃了。
+
+5. 默认情况下，default-autowire的属性为none，也就是说所有的Bean都不使用自动装配，除非Bean上配置了`autowire`属性。Spring的自动装配优点很多，但是事实上，在Spring XML配置文件里的自动装配并不推荐使用。因为当Bean增多和关系复杂度上升的时候，情况就可能会很糟糕。
+
+   ```xml
+   <!--不推荐-->
+   <!--启用自动装配,这样user中的属性会自动被装配-->
+   <bean id="user" class="com.viewscenes.netsupervisor.entity.User" autowire="byType"></bean>
+   
+   <!--推荐-->
+   <!--手动去指定依赖的对象-->
+   <bean id="people" class="ccc.spring.circulardependencies.People">
+   	<property name="b" ref="mixPrototypeB"/>
+   </bean>
+   ```
+
+### 3.7 Autowired
+
+参考：<https://juejin.im/post/5c84b5285188257c5b477177> 
+
+从Spring 2.5开始，开始支持使用注解来自动装配Bean的属性。它允许更细粒度的自动装配，我们可以选择性的标注某一个属性来对其进行自动装配：
+
+```java
+// 我们可以对这个People Bean中的car进行自动装配，对house不进行自动装配
+@Component
+public class People{
+    @Autowired
+    private Car car;
+    
+    private House house;
+}
+```
+
+Spring支持的几种不同的应用于自动装配的注解：
+
+* Spring自带的@Autowired注解
+* JSR-330的@Inject注解
+* JSR-250的@Resource注解
+
+接下来我们重点来看看这个@Autowired注解，它具有以下几个特点：
+
+1. 强制性
+
+   默认情况下，它具有强制契约特性，其所标注的属性必须是可以装配的，如果没找到对应的bean装配到该属性或参数上，就会抛出：`NoSuchBeanDefinitionException`的异常信息。当然我们不确定属性是否可以被装配时，可以使用`@Autowired(required = false)`。
+
+2. 装配策略
+
+   假如遇到了这样一个面试题：@Autowired是按照什么策略来自动装配的呢？
+
+   关于这个问题，我曾经的回答是：按照类型来自动装配的。（现在想想，自己真的应该多多去阅读下源码了。）
+
+   其实关于这个问题，不能一概而论，我们不能简单的说它是按照类型来装配。但是可以确定的一点是，它默认是按照类型来装配的，即byType。它的装配流程是：
+
+   1. 根据需要自动装配的Bean的类型去获取所有符合条件（isTypeMatch方法来确定）的beanName
+
+   2. 根据返回的BeanName，去找他们的实例（将找到的bean用LinkedHashMap<String,Object>来装）
+
+   3. 上一步得到的结果是一个列表，也就是说按照类型来匹配可能会查到多个实现。到底应该装配那个实例呢？还记得我们可以使用过的@Primary、@Qulifier这些注解吗？
+
+      ```java
+      // 当根据IComponent的类型去查找bean的时候,同时也限定了Bean的名称为componentA
+      @Autowired
+      @Qualifier("componentA")
+      private IComponent iComponent;
+      ----------------------------------------------------------------------
+      // @Primary注解一般和声明Bean(例如:@Bean、@Component、@Service)一起使用，意思是当容器中依赖该类型的bean出现多个的时候，注解了@Primary的bean就会被优先选用
+      public interface IComponent {
+          String say();
+      }
+      
+      @Component
+      @Primary
+      public class ComponentA implements IComponent {
+      
+          @Override
+          public String say() {
+              System.out.println("Hello B!I am A!");
+              return null;
+          }
+      }
+      
+      @Component
+      public class ComponentB implements IComponent {
+      
+          @Override
+          public String say() {
+              System.out.println("Hello A!I am B!");
+              return null;
+          }
+      }
+      
+      // 上面容器中IComponent类型的Bean一共有两个,名称分别为componentA和componentB
+      @RestController
+      public class PrimaryController {
+          // 会优先选用ComponentA,因为它有@Primary注解
+          @Autowired
+          private IComponent component;
+      
+          // 这里属性名刚好和ComponentA的bean的名称是一样的,因此这里会被自动注入ComponentA的Bean
+          @Autowired
+          private IComponent componentA;
+      }
+      ```
+
+      在上面，我们看到，我们选用了指定属性名为其中一个Bean的名称（例如上面我们指定了Bean的名称为：componentA），这样的话，就能实现当按照类型查找得到多个bean以后，再通过bean的名称来装配。
+
+      通过查看源码：`org.springframework.beans.factory.support.DefaultListableBeanFactory`类中的`determineAutowireCandidate`方法，我们可以看到，如果查到了多个实例，它回来确定一个合适的bean返回，其中一部分就是按照Bean的名称来匹配。
+
+   4. 如果按照Bean的名称也找不到呢？那就看看声明Bean的时候是否有@Primary注解（上面介绍过了），如果某个Bean上有@Primary注解，那就选用这个Bean。还有个注解@Priority，优先级，通过指定优先级的大小，数字越小的就会优先被装配。（注意：@Priority的包在javax.annotation.Priority，如果想使用它还要引入一个坐标）
+
+   ### 3.8 说说@Resource这个注解
+
+   @Resource这个注解是JSR-250规范中定义的注解。它的作用相当于@Autowired。@Resource注解有两个属性：`name`和`type`，一个指定了名称，一个指定了类型。它的装配策略是：
+
+   1. 如果同时指定了name和type，则从Spring上下文中找到唯一匹配的bean进行装配，找不到就会抛出异常
+   2. 如果只指定了name，则从上下文中根据bean的名称（也就是bean的ID）查找bean，如果找不到就会抛出异常
+   3. 如果只指定了type，则从上下文中找到该类型匹配的唯一bean进行装配，如果找不到或者找到了多个，就会抛出异常
+   4. 如果既没有指定name也没有指定type，那就按照byName方式进行装配。
+
+   
 
  ## 4.Spring中Bean的作用域有哪些
 
