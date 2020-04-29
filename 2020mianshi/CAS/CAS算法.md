@@ -64,7 +64,7 @@ atomicInteger.compareAndSet(2, 100);
 
 ## CAS算法原理
 
-CAS: Compare And Swap，即比较并替换
+**CAS**: Compare And Swap，即**比较并替换**
 
 CAS算法中使用到了3个基本操作数：内存地址V，旧的预期值A，要修改的新值B。
 
