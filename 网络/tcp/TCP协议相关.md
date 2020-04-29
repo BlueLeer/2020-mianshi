@@ -302,7 +302,9 @@ TIME_WAIT状态解读
 
 
 
+### HTTP和TCP的区别
 
+tcp是传输层协议，而http是应用层协议，http在传输层就是使用的tcp。
 
 
 
@@ -312,7 +314,11 @@ TIME_WAIT状态解读
 
 
 
+### HTTP和HTTPS有什么区别？
 
+HTTP协议传输的数据都是未加密的，也就是明文的，因此使用HTTP协议传输隐私信息非常不安全，为了保证这些隐私数据能加密传输，于是网景公司设计了SSL（Secure Socket Layer）协议用于对HTTP协议传输的数据进行加密，从而诞生了HTTPS。HTTPS其实是构建在SSL/TLS之上的HTTP协议，我们来看下HTTP和HTTPS的模型图：
+
+![](HTTP和HTTPS的区别.png)
 
 
 
