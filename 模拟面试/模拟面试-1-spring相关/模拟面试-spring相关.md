@@ -814,7 +814,33 @@ public someService getService(status) {
 
 
 
-## 13.Spring中有哪几种事务传播行为？
+## 13.Spring的事务和数据库的事务隔离级别是一个概念吗?
+
+我们知道，相比于数据中的隔离级别，Spring多了一个`Default`，它是使用数据库默认的隔离级别。
+
+Spring提供了统一的事务管理接口，具体实现都是由各数据库自己实现。Spring会在事务开启时，根据当前环境中设置的隔离级别，调整数据库隔离级别，由此保持了一致。在`DataSourceUtils`这个类中，代码详细的输出了这个过程：
+
+```java
+Integer previousIsolationLevel = null;
+if (definition != null && definition.getIsolationLevel() != -1) {
+    if (debugEnabled) {
+        logger.debug("Changing isolation level of JDBC Connection [" + con + "] to " + definition.getIsolationLevel());
+    }
+
+    int currentIsolation = con.getTransactionIsolation();
+    if (currentIsolation != definition.getIsolationLevel()) {
+        previousIsolationLevel = currentIsolation;
+        // 通过Connection来设置当前连接的事务隔离级别
+        con.setTransactionIsolation(definition.getIsolationLevel());
+    }
+}
+```
+
+分三种情况：1.如果我们没有指定，则使用DEFAULT，也就是数据库默认的事务隔离级别；2.如果我们指定了，则设置成我们指定的事务隔离级别；3.如果数据库不支持这种隔离级别，则以数据库为准。
+
+
+
+## 14.Spring中有哪几种事务传播行为？
 
 **支持当前事务的情况：**
 
@@ -830,4 +856,46 @@ public someService getService(status) {
 
 **其他情况：**
 
-- **TransactionDefinition.PROPAGATION_NESTED：** 如果当前存在事务，则创建一个事务作为当前事务的嵌套事务来运行；如果当前没有事务，则该取值等价于TransactionDefinition.PROPAGATION_REQUIRED。
+- **TransactionDefinition.PROPAGATION_NESTED：** 如果当前存在事务，则创建一个事务作为当前事务的嵌套事务来运行；如果当前没有事务，则该取值等价于TransactionDefinition.PROPAGATION_REQUIRED。嵌套事务内层事务会依赖外层事务，外层事务失败时，内层事务会回滚，而内层事务执行失败时不会引起外层事务回滚。
+
+
+
+默认的是：TransactionDefinition.PROPAGATION_REQUIRED，必须需要一个事务，如果当前存在事务了，就加入进去，否则就创建一个新的事务。
+
+
+
+## 15. Spring中事务传播机制是怎么实现的？
+
+**事务传播机制是事务属性的一部分，事务属性通常由事务的传播行为，事务的超时值和事务的只读标志组成**。当开启事务的时候，会将当前的事务信息存在`ThreadLocal`当中，他能确保在同一个线程下获取到同一个事务信息，从而完成了事务的传播。
+
+
+
+## 16.说说Spring对事务控制的原理，它是怎么实现事务控制的？
+
+通常我们在service方法上面加上`@Transactional`注解，这是声明式事务的开启方式。Spring使用AOP实现了事务的统一管理，而AOP是使用动态代理实现的，动态代理要么是JDK方式，要么是CgLib方式。
+
+
+
+## 17.你遇到过事务配置不生效的时候吗，说说什么时候你配置的事务会不生效？
+
+参考：<https://juejin.im/post/5e72e97c6fb9a07cb346083f> 
+
+1. 如果数据库不是InnoDB存储引擎，比如使用了MyISAM存储引擎。
+
+2. 没有配置rollbackFor，它指定了针对那种异常的情况下抛出异常。默认情况下，当配置了@Transactional而又没有指定rollbackFor参数的话，Spring碰到非必检异常（Unchecked Exception，包括RuntimeException，也包括Error）时都会回滚。如果是必检异常就必须指定。
+
+3. 应用在非public方法上会失效
+
+4. @Transactional注解的`propagation`属性设置错误，比如错误的设置了：
+
+   * TransactionDefinition.PROPAGATION_SUPPORTS 如果当前存在事务，则加入事务，如果不存在则以非事务运行
+   * TransactionDefinition.PROPAGATION_NOT_SUPPORTED 以非事务方式运行，如果当前存在事务，则把当前事务挂起
+   * TransactionDefinition.PROPAGATION_NEVER 以非事务方式运行，如果当前存在事务，则抛出异常。
+
+5. 同一个类中方法调用，导致@Transactional失效，比如：有一个类Test，它的一个方法A，A调用本类的方法B（不论方法B是用public还是private修饰），A方法没有使用@Transactional注解，B方法用了。则外部调用方法A之后，方法B的事务不会生效。这也是经常犯错误的一个地方。为啥会出现这种情况呢？其实还是由于使用Spring AOP代理造成的，因为只有当事务方法被当前类以外的代码调用时，才会由Spring生成的代理对象来管理。
+
+6. 异常被你的catch“吃了”导致@Transactional失效
+
+   这是一种很常见的@Transactional失效的问题。Spring的事务是在调用业务方法之前开启的，业务方法执行完毕之后才执行commit或者rollback，事务是否执行取决于是否抛出runtime异常（如果我没指定rollbackFor属性的话），如果抛出runtime异常，并在你的业务方法中没有catch到的话，事务会回滚。
+
+   在业务方法中一般不需要catch异常，如果非要catch一定要抛出`throw new RuntimeException()`，或者注解中指定抛异常类型`@Transactional(rollbackFor=Exception.class)`，否则会导致事务失效，数据commit造成数据不一致，所以有些时候try catch反倒会画蛇添足。
