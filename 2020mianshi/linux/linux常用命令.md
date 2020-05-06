@@ -2618,7 +2618,7 @@ COMMAND — 进程名称（命令名/命令行）
 
 
 
-###  补充
+###  补充（这是我自己日常中需要使用到的）
 
 #### pgrep
 
@@ -2626,7 +2626,19 @@ pgrep是一个命令行实用程序，可以让我们根据给定的条件查询
 
 pgrep是procps软件包的一部分，该软件包已经预装在几乎所有Linux发行版中。
 
-参考：<https://www.linuxidc.com/Linux/2020-02/162409.htm> 
+参考：<https://www.linuxidc.com/Linux/2020-02/162409.htm>
+
+
+
+#### kill -9 pid
+
+通过这个可以杀掉顽固进程
+
+
+
+后台启动应用程序，例如启动redis：`./redis-server redis.conf &` 
+
+
 
 
 
