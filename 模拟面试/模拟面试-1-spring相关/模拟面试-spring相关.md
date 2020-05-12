@@ -78,7 +78,19 @@ IOC（Inverse of Control：控制反转）是一种设计思想，就是原本�
 
 ![](Spring中Bean的生命周期.png)
 
-补充：BeanPostProcessor接口是Spring对外扩展的接口之一，它的主要用途是提供一个机会，让开发人员能够插手bean的实例化过程。通过实现这个接口，我们就可以在bean的实例化时，对bean进行一些处理。比如我们熟悉的AOP就是在这里将切面的逻辑织入bean当中的。正式因为有了BeanPostProcessor接口作为桥梁，才使得AOP可以和IOC容器产生关联。
+补充：BeanPostProcessor接口是Spring对外扩展的接口之一，它的主要用途是提供一个机会，让开发人员能够插手bean的实例化过程。通过实现这个接口，我们就可以在bean的实例化时，对bean进行一些处理。比如我们熟悉的AOP就是在这里将切面的逻辑织入bean当中的。正是因为有了BeanPostProcessor接口作为桥梁，才使得AOP可以和IOC容器产生关联。
+
+1. 实例化Bean
+2. 属性赋值
+3. 是否实现Aware相关接口
+4. BeanPostProcessor前置处理
+5. 是否实现InitializingBean接口
+6. 是否指定了init-method方法
+7. BeanPostProcessor后置处理
+8. 注册Destruction相关回调接口(注意)
+9. 使用中...
+10. 是否实现了DisposableBean接口(注意)
+11. 是否指定了了destory-method
 
 深入理解参考：<https://juejin.im/post/5e4791a7f265da5715630629> 
 
