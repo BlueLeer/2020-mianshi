@@ -804,8 +804,8 @@ public someService getService(status) {
 基本概念：
 
 * 脏读：读到了一个事务还没有提交的数据
-* 不可重复读：事务t1中读取到的数据后，另一个事务t2对数据进行了修改并且提交了，t1再次读发现数据不一样了，t1的两次读均在同一个事务中进行的
-* 幻读：会话T1事务中执行一次查询，然后会话T2新插入一行记录，这行记录恰好可以满足T1所使用的查询的条件。然后T1又使用相同 的查询再次对表进行检索，但是此时却看到了事务T2刚才插入的新行
+* 不可重复读：事务t1中读取到的数据后，另一个事务t2对数据进行了修改并且提交了，t1再次读发现数据不一样了，t1的两次读均在同一个事务中进行的（针对的是修改前后的数据读取不一致）
+* 幻读：会话T1事务中执行一次查询，然后会话T2新插入一行记录，这行记录恰好可以满足T1所使用的查询的条件。然后T1又使用相同 的查询再次对表进行检索，但是此时却看到了事务T2刚才插入的新行（针对的是记录前后读取的条数不一样）
 
 不可重复读和幻读非常容易混淆，不可重复读侧重于修改，幻读侧重于数据的新增和删除。解决不可重复读需要锁注满足条件的行就行了，而解决幻读得锁表。
 
@@ -892,11 +892,11 @@ if (definition != null && definition.getIsolationLevel() != -1) {
 
 参考：<https://juejin.im/post/5e72e97c6fb9a07cb346083f> 
 
-1. 如果数据库不是InnoDB存储引擎，比如使用了MyISAM存储引擎。
+1. 如果数据库不是InnoDB存储引擎，比如使用了MyISAM存储引擎。（MyISAM存储引擎不支持事务）
 
-2. 没有配置rollbackFor，它指定了针对那种异常的情况下抛出异常。默认情况下，当配置了@Transactional而又没有指定rollbackFor参数的话，Spring碰到非必检异常（Unchecked Exception，包括RuntimeException，也包括Error）时都会回滚。如果是必检异常就必须指定。
+2. 没有配置rollbackFor，它指定了针对那种异常的情况下抛出异常。默认情况下，当配置了@Transactional而又没有指定rollbackFor参数的话，Spring碰到非必检异常（Unchecked Exception，包括RuntimeException，也包括Error）时都会回滚。如果是必检异常就必须指定。（事务遇到非必检异常时会回滚，遇到必检异常时如果不在rollbackFor中进行指定是不会回滚的）
 
-3. 应用在非public方法上会失效
+3. 应用在非public方法上会失效（放在非public方法上会失效）
 
 4. @Transactional注解的`propagation`属性设置错误，比如错误的设置了：
 
@@ -911,3 +911,36 @@ if (definition != null && definition.getIsolationLevel() != -1) {
    这是一种很常见的@Transactional失效的问题。Spring的事务是在调用业务方法之前开启的，业务方法执行完毕之后才执行commit或者rollback，事务是否执行取决于是否抛出runtime异常（如果我没指定rollbackFor属性的话），如果抛出runtime异常，并在你的业务方法中没有catch到的话，事务会回滚。
 
    在业务方法中一般不需要catch异常，如果非要catch一定要抛出`throw new RuntimeException()`，或者注解中指定抛异常类型`@Transactional(rollbackFor=Exception.class)`，否则会导致事务失效，数据commit造成数据不一致，所以有些时候try catch反倒会画蛇添足。
+
+
+
+## 18.SpringBoot如何在启动时执行任务CommandLineRunner
+
+平常开发中有可能要实现在项目启动后执行的功能，Spring提供的一个简单的实现方案就是添加一个CommandLineRunner的实现类，并将实现功能的代码放在run方法中。例如，项目启动的时候将数据字典表里面的内容加载放入到Redis中。
+
+
+
+## 19.Spring中几个缓存注解的使用
+
+* @CacheConfig
+
+  所有的@Cacheable()里面都有一个value="xxx"的属性，如果方法多了我们要自己一个个去指定Key的前缀，这是很累的，我们可以利用@CacheConfig里面的value来指定。
+
+  
+
+* @Cacheable（对查询出来的结果进行缓存）
+
+  作用是主要针对方法进行配置，能够根据方法的请求参数对其结果进行缓存
+
+* @CachePut（放入缓存，每次调用方法的时候，都会加入到缓存）
+
+  作用是主要针对方法配置，能够根据方法的请求参数对其结果进行缓存，和@Cacheable不同的是，它每次都会触发真实方法的调用
+
+* @CacheEvict（让缓存失效）
+
+  清空缓存，它的主要作用是针对方法进行配置，能够根据一定的条件对缓存进行清空
+
+* @Caching（可以组合多个缓存注解）
+
+  有时候我们可能组合多个Cache注解使用；比如用户新增成功后，我们要添加 id->user、username->user、email->user的缓存
+
