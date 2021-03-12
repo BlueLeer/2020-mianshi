@@ -260,10 +260,33 @@ Connecting to localhost:2181
 
 
 
+## 5. 常用命令
+
+### 1. 查看某个topic消息（日志）设置的过期时间
+
+`./kafka-configs.sh --zookeeper 122.51.109.246:2181 --describe --entity-name logCenter --entity-type topics`
+
+
+
+
+
+
+
+### 2. 对单独某个topic设置过期时间
+
+
+
 
 
 参考：
 
 1. https://juejin.im/post/5aa881c26fb9a028c979bfa5#comment
 2. <https://mp.weixin.qq.com/s?__biz=Mzg2OTA0Njk0OA==&mid=2247486230&idx=1&sn=24726ec0e0aac72b184023e0bb36e6d0&chksm=cea244ddf9d5cdcb124ec859de6f01f641919124ca50c3a9026a6367334e29faa5d1ebe450b3&token=820400845&lang=zh_CN&scene=21#wechat_redirect>
+
+
+
+推荐阅读：
+
+1. [Kafka 日志消息保存时间总结](https://www.cnblogs.com/angellst/p/9368493.html)
+2. 
 
