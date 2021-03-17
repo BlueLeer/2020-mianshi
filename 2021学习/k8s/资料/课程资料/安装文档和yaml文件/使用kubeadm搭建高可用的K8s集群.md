@@ -79,6 +79,10 @@ yum install -y keepalived
 
 ### 3.2配置master节点
 
+
+
+ wget https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo -O /etc/yum.repos.d/docker-ce.repo
+
 master1节点配置
 
 ```
