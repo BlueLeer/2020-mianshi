@@ -77,9 +77,16 @@ echo $?
 >
 > 当我们在修改完/etc/profile里面的文件后，或者系统的其他配置文件以后，我们需要执行下 source xxx，然后使得刚刚的修改生效。
 >
-> `source filename`，这个命令只是简单地读取脚本里面的语句，然后依次放到当前的shell中执行，没有建立新的子shell。那么脚本里面所有新建、改变变量的语句都会保存在当前的shell里面。在当前的shell中新建的变量、改变的变量都会影响shell的全局环境。
-
-
+> `source filename`，这个命令只是简单地读取脚本里面的语句，然后依次放到当前的shell中执行，没有建立新的子shell。使用source（和使用点事一样的）那么脚本里面所有新建、改变变量都会在当前shell中看到，它**没有另开进程**；使用sh执行脚本文件（或者./xxx.sh）,是在当前进程**另开子进程**来执行命令，脚本中设置的变量在当前shell中不能看到。
+>
+> 问：有一个alias.sh文件：
+>
+> ```shell
+> #!/bin/bash
+> alias get_po="kubectl get po --namespace default"
+> ```
+>
+> 使用`. alias.sh`执行以后，然后再另外一个shell窗口中能使用get_po命令吗？答案是不能，我们定一个一个命令的别名，虽然相当于是在当前shell中执行的，但是它不会全局添加这个别名，还是对当前shell生效的。
 
 > **文件权限**
 >
@@ -100,6 +107,54 @@ echo $?
 ```
 
 这个alias只是在当前的session中有效；如果想要永久的保存alias，可以将其写入到/etc/profile或者～/.bash_rc中去，两个的区别是影响的用户范围不一样而已。
+
+
+
+### 常用命令
+
+1. 按键`ctrl+R`同时按下，然后可以搜索历史输入过的命令 
+
+2. 按键`ctrl+D` 同时按下，推出当前会话
+
+3. 按键`ctrl+A`对命令进行编辑，使得光标移动到命令的第一个字符处；`ctrl+E`，移动到末尾；`ctrl+K`删除光标之后的命令；`ctrl+U`删除光标之前的；`ctrl+S`锁屏，`ctrl+Q`解锁；`ctrl+Y`撤销
+
+4. screen的使用
+
+   screen需要另外安装，他是一个工具，用户保存回话，便于恢复，使用方法如下：
+
+   ```shell
+   # 1 创建一个screen
+   [root@lee ~]# screen -S lee
+   # 2 输入我们的命令
+   [root@lee ~]# echo abc
+   abc
+   [root@lee ~]# echo def
+   def
+   [root@lee ~]#
+   # 3 关闭窗口
+   # 4 查看当前有哪些屏幕
+   [root@lee ~]# screen -list
+   There are screens on:
+           31327.lee       (Attached)
+           30251.test      (Attached)
+           26647.pts-2.lee (Attached)
+           25229.wl        (Attached)
+   4 Sockets in /var/run/screen/S-root
+   # 5 恢复会话
+   [root@lee ~]# screen -r 31327
+   There is a screen on:
+           31327.lee       (Attached)
+   There is no screen to be resumed matching 31327.
+   [root@lee ~]#
+   ```
+
+   
+
+
+
+
+
+
 
 
 
