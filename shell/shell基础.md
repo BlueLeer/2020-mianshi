@@ -148,7 +148,145 @@ echo $?
    [root@lee ~]#
    ```
 
+5. &  和 nohup 的使用
+
+   一般一起使用，nohup指的是不挂断地运行命令，&指的是在后台运行
+
+   ```shell
+   nohup command &
+   # 进入后台运行以后就变成job，可以使用 job -l 命令来查看
+   ```
+
+6. fg和bg的使用（前台任务和后台任务）
+
+   fg是让进程在前台工作，bg（ctrl+z组合按键的效果是一样的）是让进程在后台工作
+
+   ```shell
+   # bg命令查看后台进程
+   [root@lee shell]# bg
+   [4]+ vi bb.txt &
    
+   [4]+  已停止               vi bb.txt
+   # fg+作业号，让后台进程恢复至前台运行
+   [root@lee shell]# fg 4
+   
+   # 日常当中，我们使用最多的是，比如我们正在通过vi编辑一个文件，这个时候需要回到主进程shell查看其他的信息，这个时候可以在vi的编辑页面同时按下ctrl+Z，这个时候vi进程就会退到后台运行，我们在主进程操作完了以后，输入fg命令可以快速让上一次的vi任务回到前台运行，这个时候就可以愉快的继续编辑了。如果有多个后台job，我们可以输入 jobs -l来查看作业号，然后通过 fg+作业号 使得后台的进程回到前台来继续运行。
+   ```
+
+7. kill命令 （可以杀掉进程，也可以杀掉作业）
+
+   kill pid 停止进程pid的进程；kill %jobId 杀掉当前进程的作业号为jobId的job。
+
+8. 输入输出重定向
+
+   \> 	>>	<	<<	>&1	2>&1	>&	&> 
+
+9. 管道和tee管道
+
+   ```shell
+   # 即上个命令的输出作为下个命令的输入
+   [root@lee shell]# ps ef|grep 'sh'|grep -v ps
+   
+   # 使用tee管道使得管道里面的内容在某一处输出到文件中，而且不截流 tee -a是追加
+   [root@lee shell]# cat EOF.sh |tee EOF2.sh
+   #!/bin/bash
+   
+   echo <<-EOF nihao
+   	EOF
+   [root@lee shell]# cat EOF2.sh
+   #!/bin/bash
+   
+   echo <<-EOF nihao
+   	EOF
+   [root@lee shell]#
+   ```
+
+### 命令排序
+
+1. ；分号
+
+   对命令进行分隔
+
+   ```shell
+   [root@lee ~]# cd /home/ksjfsidf;ls
+   -bash: cd: /home/ksjfsidf: 没有那个文件或目录
+   k8s-install  kubecfg.crt  kubecfg.key  kubecfg.p12  nohup.out
+   # 我们可以看到，；对命令进行了分隔，使得一行可以同时执行多个命令，前一个命令不管执行成功与否，后面的命令会照常执行
+   ```
+
+2. && 
+
+   也是分隔一行的多个命令，前一个命令执行成功，后面的命令才会执行，带有逻辑判断的功能
+
+   ```shell
+   [root@lee ~]# cd /home/ksjfksjd && ls
+   -bash: cd: /home/ksjfksjd: 没有那个文件或目录
+   ```
+
+3. || 
+
+   用于命令的分隔，只有当前一个命令执行失败，后面的命令才会执行
+
+
+
+### shell中的通配符（元字符）表示的不是本意
+
+* \* 任意多个字符
+
+  ```shell
+  [root@lee home]# ls *.txt
+  aaa.txt  a.txt  b.txt
+  ```
+
+* ？匹配任意一个字符
+
+  ```shell
+  [root@lee home]# ls
+  aaa.txt  abcd  a.txt  b.txt  shell  wl
+  [root@lee home]# rm -f ?.txt
+  [root@lee home]# ls
+  aaa.txt  abcd  shell  wl
+  ```
+
+* [] 匹配括号中任意一个字符
+
+  ```shell
+  [root@lee home]# ls
+  aaa.txt  abcd  liive.txt  live.txt  love.txt  shell  wl
+  [root@lee home]# ls l[a-z]ve.txt
+  live.txt  love.txt
+  ```
+
+* () 在子shell中执行（cd /home/wl）
+
+  ```shell
+  [root@lee ~]# (a=1;echo $a)
+  1
+  [root@lee ~]# echo $a
+  
+  [root@lee ~]#
+  ```
+
+* {} 集合 touch file{1..2} -- 创建了file1、file2、file3....文件
+
+  ```shell
+  [root@lee test]# cp a.txt{,.old}
+  [root@lee test]# ls
+  a.txt  a.txt.old  file-guoxiaolv  file-wangdahong
+  ```
+
+* \ 转义字符，让字符回归本意
+
+  ```shell
+  curl http://localhost:8080/person?id=5\&name=lee
+  # 执行上面的命令的时候就需要用到转义字符
+  
+  # 我们知道\符号在这里可以理解为换行符，其实我们可以把它当作enter的转义 
+  root@lee test]# touch abc \
+  > echo abc >> abc
+  ```
+
+  
 
 
 
