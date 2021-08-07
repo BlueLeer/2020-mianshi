@@ -1,4 +1,4 @@
-## 各种语言的执行的区别
+### 各种语言的执行的区别
 
 * Java 先编译成字节码文件，然后由JVM执行字节码文件（其实是将字节码文件转化为可执行的二进制文件）
 * Python 解释执行
@@ -267,7 +267,7 @@ echo $?
   [root@lee ~]#
   ```
 
-* {} 集合 touch file{1..2} -- 创建了file1、file2、file3....文件
+* {} 集合 touch file{1..9} -- 创建了file1、file2、file3....文件
 
   ```shell
   [root@lee test]# cp a.txt{,.old}
@@ -286,7 +286,143 @@ echo $?
   > echo abc >> abc
   ```
 
-  
+### sudo命令
+
+Linux的sudo命令以系统管理员的身份执行命令，也就是说命令之前加上了sudo以后执行命令就好像是root用户亲自执行命令一样。
+
+### echo
+
+> NAME
+>        echo - display a line of text
+>
+> SYNOPSIS
+>        echo [SHORT-OPTION]... [STRING]...
+>        echo LONG-OPTION
+>
+> DESCRIPTION
+>        Echo the STRING(s) to standard output.
+>
+>        -n     do not output the trailing newline
+>        -e     enable interpretation of backslash escapes 启用反斜杠转义的解释功能
+>        -E     disable interpretation of backslash escapes (default)
+
+```shell
+root@lee ~]# echo "a\nb"
+a\nb
+[root@lee ~]# echo -e "a\nb"
+a
+b
+```
+
+带有颜色的输出(30-37是文本的颜色，40-47是文字背景的颜色)
+
+```shell
+[root@lee ~]# echo -e "\e[1;31mHello mac. \e[0m"
+Hello mac.
+[root@lee ~]# echo -e "\e[1;32mHello mac. \e[0m"
+Hello mac.
+[root@lee ~]# echo -e "\e[1;33mHello mac. \e[0m"
+Hello mac.
+[root@lee ~]# echo -e "\e[1;34mHello mac. \e[0m"
+Hello mac.
+[root@lee ~]# echo -e "\e[1;35mHello mac. \e[0m"
+Hello mac.
+```
+
+
+
+### prinft 格式化输出
+
+`printf FORMAT [ARGUMENT]...` FORMAT代表格式，ARGUMENT是参数
+
+```shell
+[root@lee ~]# printf "%-10s %-10s %-10s %-10s\n" 姓名 年龄 身高 体重
+姓名     年龄     身高     体重
+[root@lee ~]# printf "%-10s %-10s %-10s %-10s\n" 张三 18 177 130
+张三     18         177        130
+[root@lee ~]# printf "%-10s %-10s %-10s %-10s\n" 李四 28 190 150
+李四     28         190        150
+```
+
+* \- 代表左对齐 +或者不填代表右对齐 s字符串 d整数 f小数 c单个字符
+* 10代表宽度，如果宽度不够会用空格补齐，超出宽度也会原样输出
+
+
+
+### read 命令
+
+`read -p "Please input ip: " ip` -p代表给出一个提示，在键盘输入的内容按下回车键以后会赋值给ip这个变量。
+
+### shell中的变量
+
+1. 自定义变量
+
+   定义变量：变量名=xxx
+
+   引用变量：$变量名 或者 ${变量名}
+
+   查看变量：echo $变量名；set（查看所有的变量，包含自定义变量和环境变量）
+
+   取消变量：unset 变量名
+
+   作用范围：**只在当前shell中起作用（子shell中也不起作用）**
+
+   > 通过命令替换的方式来给变量赋值，通过反引号或者$(command)的方式
+   >
+   > ```shell
+   > [root@lee wl]# a=\`date +%F\`
+   > [root@lee wl]# echo $a
+   > 2021-08-07
+   > [root@lee wl]# b=$(date +%Y%m%d)
+   > [root@lee wl]# echo $b
+   > 20210807
+   > 
+   > ```
+   >
+   > 通过read对变量进行赋值
+   >
+   > ```shell
+   > [root@lee wl]# read i
+   > 123
+   > [root@lee wl]# echo $i
+   > 123
+   > ```
+   >
+   > 
+
+2. 环境变量
+
+   定义变量：export 变量名=xxx；或者 分作两步：变量名=xxx；export 变量名
+
+   引用变量：$变量名 或者 ${变量名}
+
+   查看变量：echo $变量名；set（查看所有的变量，包含自定义变量和环境变量）；env（查看所有的环境变量）
+
+   取消变量：unset 变量名
+
+   作用范围：**只在当前shell和子shell中起作用**
+
+3. 位置变量
+
+   $1 $2 $3 $4..... $0是shell脚本本身的名字
+
+4. 预定义变量
+
+   | 变量名 | 变量含义                                              |
+   | ------ | ----------------------------------------------------- |
+   | $0     | 脚本名（带有路径，可以使用basename $0来输出文件名字） |
+   | $*     | 所有的参数                                            |
+   | $@     | 所有的参数                                            |
+   | @#     | 参数的长度                                            |
+   | $$     | 当前进程的PID                                         |
+   | $!     | 上一个后台进程的PID                                   |
+   | $?     | 上一个命令返回的结果 0表示成功                        |
+
+   注：$*会把所有的位置参数当做一个整体，它是一个string；$@会把所有的位置参数当做一个个单独的字段，它是一个列表。
+
+
+
+
 
 
 
